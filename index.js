@@ -1,30 +1,26 @@
 const puppeteer = require("puppeteer");
 
-// input login credentials
-const user = "user";
-const pass = "pw";
+const { user, pass } = require('./loginInfo');
+const { connectWithUsers, openBrowser, userList } = require('./config');
 
-// input linkedin urls as strings to endorse skills
-const array = [];
 
 const visitPage = async (page, link) => {
   await page.goto(link, { waitUntil: "domcontentloaded" });
   console.log("visiting ", link);
   const connectButton = await page.$("button.pv-s-profile-actions--connect");
-  // UNCOMMENT HERE FOR CONNECTING
-  // const pendingButton = await page.$(
-  //   'button.pv-s-profile-actions--connect[disabled]'
-  // );
+  const pendingButton = await page.$(
+    'button.pv-s-profile-actions--connect[disabled]'
+  );
   if (connectButton !== null) {
-    return;
-    //   if (pendingButton !== null) {
-    //     return;
-    //   } else {
-    //     console.log('connecting');
-    //     await page.click('button.pv-s-profile-actions--connect');
-    //     await page.click('.artdeco-modal__actionbar > .artdeco-button--primary');
-    //     return;
-    //   }
+    if (!connectWithUsers) return;
+    if (pendingButton !== null) {
+      return;
+    } else {
+      console.log('connecting');
+      await page.click('button.pv-s-profile-actions--connect');
+      await page.click('.artdeco-modal__actionbar > .artdeco-button--primary');
+      return;
+    }
   }
   try {
     while (!(await page.$("button.pv-profile-section__card-action-bar"))) {
@@ -55,7 +51,7 @@ const visitPage = async (page, link) => {
 
 const startBrowser = async () => {
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ headless: !openBrowser });
     const page = (await browser.pages())[0];
     await page.setViewport({ width: 1366, height: 768 });
     await page.goto("https://www.linkedin.com/login", {
@@ -66,7 +62,7 @@ const startBrowser = async () => {
     await page.type("#password", pass);
     await page.click(".btn__primary--large");
     await page.waitForNavigation();
-    for (let link of array) {
+    for (let link of userList) {
       await visitPage(page, link);
     }
     await browser.close();
